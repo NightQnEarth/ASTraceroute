@@ -1,31 +1,25 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
-using CommandLine;
 
 namespace ASTraceroute
 {
     static class Program
     {
+        private static readonly DnsEndPoint whoisEndPoint = new DnsEndPoint("whois.cymru.com", 43);
+
         public static void Main(string[] args)
         {
-            string targetName = null;
-            int maximumHops = 0;
-            int timeout = 0;
+            var inputOptions = DataParser.GetInputData(args);
+            var traceroute = Traceroute.GetTraceroute(DataParser.ConvertToIpAddress(inputOptions.TargetName),
+                                                      inputOptions.MaximumHops, inputOptions.Timeout);
+            var interfacesInfo = traceroute.Select(
+                address => Traceroute.GetWhoisInformationFromRemoteServer(whoisEndPoint, address));
 
-            Parser.Default.ParseArguments<Options>(args)
-                  .WithParsed(options =>
-                  {
-                      targetName = options.TargetName;
-                      maximumHops = options.MaximumHops;
-                      timeout = options.Timeout;
-                  })
-                  .WithNotParsed(errors => Environment.Exit(0));
+            var asTraceroute = traceroute.Zip(interfacesInfo, DataParser.ParseWhoisServerResponse);
 
-            if (!IPAddress.TryParse(targetName, out IPAddress targetIp))
-                targetIp = Dns.GetHostAddresses(targetName)[0];
-
-            foreach (var ipAddress in Traceroute.GetTraceroute(targetIp, maximumHops, timeout))
-                Console.WriteLine(ipAddress);
+            foreach (var tableRecord in DataParser.ResultTableGenerate(asTraceroute))
+                Console.Write(tableRecord);
         }
     }
 }

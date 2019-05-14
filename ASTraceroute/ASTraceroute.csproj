@@ -37,12 +37,22 @@
           <HintPath>..\packages\CommandLineParser.2.5.0\lib\net461\CommandLine.dll</HintPath>
           <Private>True</Private>
         </Reference>
+        <Reference Include="IPAddressRange, Version=3.2.0.0, Culture=neutral, PublicKeyToken=578e3c3d17e7c751">
+          <HintPath>..\packages\IPAddressRange.3.2.0\lib\net45\IPAddressRange.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
         <Reference Include="System.Xml" />
+        <Reference Include="WhoisClient, Version=3.0.1.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\packages\WhoisClient.NET.3.0.1\lib\net45\WhoisClient.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="DataParser.cs" />
+        <Compile Include="NetworkInterfaceInfo.cs" />
         <Compile Include="Options.cs" />
         <Compile Include="Program.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
