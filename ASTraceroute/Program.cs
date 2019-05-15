@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 
 namespace ASTraceroute
@@ -11,14 +10,12 @@ namespace ASTraceroute
         public static void Main(string[] args)
         {
             var inputOptions = DataParser.GetInputData(args);
-            var traceroute = Traceroute.GetTraceroute(DataParser.ConvertToIpAddress(inputOptions.TargetName),
-                                                      inputOptions.MaximumHops, inputOptions.Timeout);
-            var interfacesInfo = traceroute.Select(
-                address => Traceroute.GetWhoisInformationFromRemoteServer(whoisEndPoint, address));
 
-            var asTraceroute = traceroute.Zip(interfacesInfo, DataParser.ParseWhoisServerResponse);
+            var detailedTraceroute = Traceroute.DetailedTraceroute(
+                DataParser.ConvertToIpAddress(inputOptions.TargetName),
+                inputOptions.MaximumHops, inputOptions.Timeout, whoisEndPoint);
 
-            foreach (var tableRecord in DataParser.ResultTableGenerate(asTraceroute))
+            foreach (var tableRecord in DataParser.GenerateResultTable(detailedTraceroute))
                 Console.Write(tableRecord);
         }
     }

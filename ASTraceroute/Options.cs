@@ -31,7 +31,7 @@ namespace ASTraceroute
         }
 
         [Option('w', "timeout",
-            Default = 4000,
+            Default = 1000,
             HelpText = "Wait timeout milliseconds for each reply.")]
         public int Timeout { get; set; }
     }

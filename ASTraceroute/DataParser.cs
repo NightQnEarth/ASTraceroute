@@ -1,23 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
 using CommandLine;
 
 namespace ASTraceroute
 {
     public static class DataParser
     {
-        private static readonly Regex asNumberRegex = new Regex(@"^(\d+)\s+\|");
-        private static readonly Regex asNameRegex = new Regex(@"\| ((?:\w|\-|,|\s)+)$");
-        private static readonly Regex countryRegex = new Regex(@"\| ([A-Z]{2}) \|");
-        
         // ReSharper disable once ParameterTypeCanBeEnumerable.Global
         public static Options GetInputData(string[] args)
         {
-            Options options = new Options();
+            var options = new Options();
 
             Parser.Default.ParseArguments<Options>(args)
                   .WithParsed(inputOptions =>
@@ -35,107 +31,89 @@ namespace ASTraceroute
         {
             if (!IPAddress.TryParse(targetName, out IPAddress targetIp))
                 targetIp = Dns.GetHostAddresses(targetName)[0];
-            
+
             return targetIp ?? throw new InvalidCastException(
                        $"Cannot convert getting target_name=\"{targetName}\" to IPAddress type.");
         }
 
-        public static NetworkInterfaceInfo ParseWhoisServerResponse(IPAddress ipAddress, string serverResponse) =>
-            new NetworkInterfaceInfo
+        [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
+        public static IEnumerable<string> GenerateResultTable(IEnumerable<NetworkInterfaceInfo> interfacesInfo)
+        {
+            const string numberLabel = "Number";
+            const string interfaceAddressLabel = "Interface address";
+            const string asNumberLabel = "ASNumber";
+            const string asNameLabel = "ASName";
+            const string countryLabel = "Country";
+
+            var columnWidthMap = new Dictionary<string, int>
             {
-                InterfaceAddress = ipAddress?.ToString() ?? "*",
-                ASNumber = serverResponse is null ? "*" : asNumberRegex.Match(serverResponse).Groups[1].Value,
-                ASName = serverResponse is null ? "*" : asNameRegex.Match(serverResponse).Groups[1].Value,
-                Country = serverResponse is null ? "*" : countryRegex.Match(serverResponse).Groups[1].Value
+                { numberLabel, numberLabel.Length + 2 },
+                { interfaceAddressLabel, 32 + 7 },
+                { asNumberLabel, asNumberLabel.Length + 2 },
+                { asNameLabel, 30 },
+                { countryLabel, countryLabel.Length + 2 }
             };
 
-        [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-        public static IEnumerable<string> ResultTableGenerate(IEnumerable<NetworkInterfaceInfo> interfacesInfo)
-        {
-            const string asNameColumnHeader = "ASName";
-            const string asNumberColumnHeader = "ASNumber";
-            const string countryColumnHeader = "Country";
-            const string interfaceAddressColumnHeader = "InterfaceAddress";
-            const string numberColumnHeader = "Number";
-            
-            const int interfaceAddressColumnWidth = 32 + 7;
-            int asNumberColumnWidth = asNumberColumnHeader.Length;
-            const int asNameColumnWidth = 30;
-            int countryColumnWidth = countryColumnHeader.Length;
-            int interfacesNumberColumnWidth = interfaceAddressColumnHeader.Length;
-            
-            int tableWidth = interfaceAddressColumnWidth + asNumberColumnWidth + asNameColumnWidth + 
-                             countryColumnWidth + interfacesNumberColumnWidth + 5 * 2 + 6;
-
-//            foreach (var interfaceInfo in interfacesInfo)
-//            { 
-//                maxInterfaceAddressLength = Math.Max(maxInterfaceAddressLength, interfaceInfo.InterfaceAddress.Length);
-//                maxASNumberLength = Math.Max(maxASNumberLength, interfaceInfo.ASNumber.Length);
-//                maxASNameLength = Math.Max(maxASNameLength, interfaceInfo.ASName.Length);
-//                maxCountryLength = Math.Max(maxCountryLength, interfaceInfo.Country.Length);
-//                maxInterfaceAddressLength++;
-//            }
-//
-//            maxInterfacesNumberLength = maxInterfacesNumberLength.ToString().Length;
-
             var stringBuilder = new StringBuilder();
-            var rowNumber = 0;
 
             AppendBorder();
+            AppendInterfaceRecord(numberLabel,
+                                  new NetworkInterfaceInfo
+                                  {
+                                      InterfaceAddress = interfaceAddressLabel,
+                                      ASNumber = asNumberLabel,
+                                      ASName = asNameLabel,
+                                      Country = countryLabel
+                                  });
+            AppendBorder();
+            yield return Flush();
 
-            AppendInterfaceRecord(new NetworkInterfaceInfo
-            {
-                ASName = asNameColumnHeader,
-                ASNumber = asNumberColumnHeader,
-                Country = countryColumnHeader,
-                InterfaceAddress = interfaceAddressColumnHeader
-            }, 
-                                  numberColumnHeader);
-            
-            yield return stringBuilder.ToString();
-            stringBuilder.Clear();
-
+            var recordNumber = 0;
             foreach (var info in interfacesInfo)
             {
-                AppendInterfaceRecord(info, (++rowNumber).ToString());
-                yield return stringBuilder.ToString();
+                AppendInterfaceRecord((++recordNumber).ToString(), info);
+                yield return Flush();
             }
-            
-            stringBuilder.Clear();
+
             AppendBorder();
-            yield return stringBuilder.ToString();
+            yield return Flush();
+
+            string Flush()
+            {
+                var builtString = stringBuilder.ToString();
+                stringBuilder.Clear();
+
+                return builtString;
+            }
 
             void AppendBorder()
             {
                 stringBuilder.Append('+');
-                stringBuilder.Append('-', tableWidth - 2);
+                stringBuilder.Append('-', columnWidthMap.Values.Sum() + 6 - 2);
                 stringBuilder.Append('+');
                 stringBuilder.Append(Environment.NewLine);
             }
 
-            void AppendInterfaceRecord(NetworkInterfaceInfo interfaceInfo, string recordNumber)
+            void AppendInterfaceRecord(string number, NetworkInterfaceInfo interfaceInfo)
             {
-                stringBuilder.Clear();
-                
-                AppendColumn(interfacesNumberColumnWidth, recordNumber);
-                AppendColumn(interfaceAddressColumnWidth, interfaceInfo.InterfaceAddress);
-                AppendColumn(countryColumnWidth, interfaceInfo.Country);
-                AppendColumn(asNumberColumnWidth, interfaceInfo.ASNumber);
-                AppendColumn(asNameColumnWidth, interfaceInfo.ASName);
+                AppendColumn(columnWidthMap[numberLabel], number);
+                AppendColumn(columnWidthMap[interfaceAddressLabel], interfaceInfo.InterfaceAddress);
+                AppendColumn(columnWidthMap[asNumberLabel], interfaceInfo.ASNumber);
+                AppendColumn(columnWidthMap[asNameLabel], interfaceInfo.ASName);
+                AppendColumn(columnWidthMap[countryLabel], interfaceInfo.Country);
 
                 stringBuilder.Append('|');
-                
+                stringBuilder.Append(Environment.NewLine);
             }
 
             void AppendColumn(int columnWidth, string content)
             {
                 stringBuilder.Append('|');
-                var stabLength = columnWidth - content.Length / 2;
-                stringBuilder.Append(new string(' ', stabLength));
+                var stabLength = (columnWidth - content.Length) / 2;
+                stringBuilder.Append(' ', stabLength);
                 stringBuilder.Append(content);
-                stringBuilder.Append(new string(' ', stabLength));
-                if (stabLength * 2 + content.Length < columnWidth + 2)
-                    stringBuilder.Append(' ');
+                stringBuilder.Append(' ', stabLength);
+                if (stabLength * 2 + content.Length < columnWidth) stringBuilder.Append(' ');
             }
         }
     }
