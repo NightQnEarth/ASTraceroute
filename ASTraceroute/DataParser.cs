@@ -50,7 +50,7 @@ namespace ASTraceroute
                 { numberLabel, numberLabel.Length + 2 },
                 { interfaceAddressLabel, 32 + 7 },
                 { asNumberLabel, asNumberLabel.Length + 2 },
-                { asNameLabel, 30 },
+                { asNameLabel, 60 },
                 { countryLabel, countryLabel.Length + 2 }
             };
 
@@ -108,6 +108,9 @@ namespace ASTraceroute
 
             void AppendColumn(int columnWidth, string content)
             {
+                if (content.Length > columnWidth - 2 && content.Length > 5)
+                    content = content.Substring(0, columnWidth - 5) + "...";
+
                 stringBuilder.Append('|');
                 var stabLength = (columnWidth - content.Length) / 2;
                 stringBuilder.Append(' ', stabLength);

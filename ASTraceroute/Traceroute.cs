@@ -12,7 +12,7 @@ namespace ASTraceroute
     public static class Traceroute
     {
         private static readonly Regex asNumberRegex = new Regex(@"^(\d+)\s+\|");
-        private static readonly Regex asNameRegex = new Regex(@"\| ((?:\w|\-|,| |\t)+)\s*$");
+        private static readonly Regex asNameRegex = new Regex(@"\| ([^\r\n\|]+)\s*$");
         private static readonly Regex countryRegex = new Regex(@"\| ([A-Z]{2}) \|");
 
         private static IEnumerable<IPAddress> GetTraceroute(IPAddress target, int maximumHops, int timeout)
@@ -59,14 +59,22 @@ namespace ASTraceroute
         }
 
         private static NetworkInterfaceInfo ParseWhoisServerResponseToInterfaceInfo(
-            IPAddress ipAddress, string serverResponse) =>
-            new NetworkInterfaceInfo
+            IPAddress ipAddress, string serverResponse)
+        {
+            var interfaceInfo = new NetworkInterfaceInfo
             {
                 InterfaceAddress = ipAddress?.ToString() ?? "*",
                 ASNumber = serverResponse is null ? "*" : asNumberRegex.Match(serverResponse).Groups[1].Value,
                 ASName = serverResponse is null ? "*" : asNameRegex.Match(serverResponse).Groups[1].Value,
                 Country = serverResponse is null ? "*" : countryRegex.Match(serverResponse).Groups[1].Value
             };
+
+            if (interfaceInfo.ASName == "NA") interfaceInfo.ASName = "*";
+            if (string.IsNullOrEmpty(interfaceInfo.ASNumber)) interfaceInfo.ASNumber = "*";
+            if (interfaceInfo.Country == "NA") interfaceInfo.Country = "*";
+
+            return interfaceInfo;
+        }
 
         public static IEnumerable<NetworkInterfaceInfo> DetailedTraceroute(
             IPAddress target, int maximumHops, int timeout, DnsEndPoint whoisServer) =>
