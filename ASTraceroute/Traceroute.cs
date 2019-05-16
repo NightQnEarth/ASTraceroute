@@ -76,7 +76,7 @@ namespace ASTraceroute
             return interfaceInfo;
         }
 
-        public static IEnumerable<NetworkInterfaceInfo> DetailedTraceroute(
+        public static IEnumerable<NetworkInterfaceInfo> GetDetailedTraceroute(
             IPAddress target, int maximumHops, int timeout, DnsEndPoint whoisServer) =>
             GetTraceroute(target, maximumHops, timeout)
                 .Select(address => ParseWhoisServerResponseToInterfaceInfo(

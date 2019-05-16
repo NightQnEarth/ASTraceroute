@@ -11,7 +11,7 @@ namespace ASTraceroute
         {
             var inputOptions = DataParser.GetInputData(args);
 
-            var detailedTraceroute = Traceroute.DetailedTraceroute(
+            var detailedTraceroute = Traceroute.GetDetailedTraceroute(
                 DataParser.ConvertToIpAddress(inputOptions.TargetName),
                 inputOptions.MaximumHops, inputOptions.Timeout, whoisEndPoint);
 
