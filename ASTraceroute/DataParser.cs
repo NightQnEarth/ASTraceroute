@@ -48,7 +48,7 @@ namespace ASTraceroute
             var columnWidthMap = new Dictionary<string, int>
             {
                 { numberLabel, numberLabel.Length + 2 },
-                { interfaceAddressLabel, 32 + 7 },
+                { interfaceAddressLabel, 32 + 7 + 2 },
                 { asNumberLabel, asNumberLabel.Length + 2 },
                 { asNameLabel, 60 },
                 { countryLabel, countryLabel.Length + 2 }
@@ -86,13 +86,9 @@ namespace ASTraceroute
                 return builtString;
             }
 
-            void AppendBorder()
-            {
-                stringBuilder.Append('+');
-                stringBuilder.Append('-', columnWidthMap.Values.Sum() + 6 - 2);
-                stringBuilder.Append('+');
-                stringBuilder.Append(Environment.NewLine);
-            }
+            void AppendBorder() =>
+                stringBuilder.Append('+').Append('-', columnWidthMap.Values.Sum() + 6 - 2).Append('+')
+                             .Append(Environment.NewLine);
 
             void AppendInterfaceRecord(string number, NetworkInterfaceInfo interfaceInfo)
             {
@@ -102,8 +98,7 @@ namespace ASTraceroute
                 AppendColumn(columnWidthMap[asNameLabel], interfaceInfo.ASName);
                 AppendColumn(columnWidthMap[countryLabel], interfaceInfo.Country);
 
-                stringBuilder.Append('|');
-                stringBuilder.Append(Environment.NewLine);
+                stringBuilder.Append('|').Append(Environment.NewLine);
             }
 
             void AppendColumn(int columnWidth, string content)
@@ -111,11 +106,10 @@ namespace ASTraceroute
                 if (content.Length > columnWidth - 2 && content.Length > 5)
                     content = content.Substring(0, columnWidth - 5) + "...";
 
-                stringBuilder.Append('|');
                 var stabLength = (columnWidth - content.Length) / 2;
-                stringBuilder.Append(' ', stabLength);
-                stringBuilder.Append(content);
-                stringBuilder.Append(' ', stabLength);
+
+                stringBuilder.Append('|').Append(' ', stabLength).Append(content).Append(' ', stabLength);
+
                 if (stabLength * 2 + content.Length < columnWidth) stringBuilder.Append(' ');
             }
         }
